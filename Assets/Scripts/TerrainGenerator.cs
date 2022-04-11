@@ -5,22 +5,31 @@ using UnityEngine;
 
 public class TerrainGenerator : MonoBehaviour {
     public Texture2D biomeColourMap;
+    public Texture2D waterColourMap;
+    public Texture2D temperatureColourMap;
+
+
+    public float BEACH_HEIGHT = -0.27f;
+    public float WATER_HEIGHT = -0.3f;
+
+
 
     private Vector2[] heightOffsets;
     private Vector2[] humidityOffsets;
     private Vector2[] temperatureOffsets;
 
     public static int nHeightLayers = 4;
+    public static int nHumidityLayers = 3;
 
     // the higher, the more 'zoomed in'.
     // Needs to be likely to result in non-integer
-    public float scale = 361.4f;
+    float scale = 101.7f;
 
     // the higher the octave, the less of an effect
-    public float persistance = 0.5f;
+    float persistance = 0.5f;
 
     // value that decreases scale each octave
-    public float lacunarity = 2.5f;
+    float lacunarity = 2.1f;
 
     // seed to help with world generation
     public int SEED = 130;
@@ -31,13 +40,13 @@ public class TerrainGenerator : MonoBehaviour {
     void Awake() {
         PRNG = new System.Random(SEED);
         heightOffsets = generateNRandomVectors(nHeightLayers);
-        humidityOffsets = generateNRandomVectors(1);
+        humidityOffsets = generateNRandomVectors(nHumidityLayers);
         temperatureOffsets = generateNRandomVectors(1);
     }
 
     void Start() {
-        Debug.Log("Generating images...");
         StartCoroutine("GenerateTerrainImage");
+        StartCoroutine("GenerateTemperatureImage");
     }
     private Vector2[] generateNRandomVectors(int n) {
         Vector2[] numbers = new Vector2[n];
@@ -73,68 +82,103 @@ public class TerrainGenerator : MonoBehaviour {
     // note: there is currently no noise layers for humidity
     private float getHumidity(int x, int y, float heightVal) {
         float humidityScale = scale / 2;
-        float perlinValue = Mathf.PerlinNoise((x / humidityScale) + humidityOffsets[0].x, (y / humidityScale) + humidityOffsets[0].y);
-        float humidity = perlinValue;
+        float humidity = 0;
+        float amplitude = 1;
+        float frequency = 1;
+
+        for (int i = 0; i < nHumidityLayers; i++) {
+            // scale results in non-integer value
+            float sampleX = x / (humidityScale / frequency) + humidityOffsets[i].x + 0.1f;
+            float sampleY = y / (humidityScale / frequency) + humidityOffsets[i].y + 0.1f;
+
+            float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
+            humidity += perlinValue * amplitude;
+
+            // amplitude decreases each octave if persistance < 1
+            amplitude *= persistance;
+            // frequency increases each octave if lacunarity > 1
+            frequency *= lacunarity;
+        }
 
         float height = Mathf.InverseLerp(-1f, 1f, heightVal);
 
         // slightly influence humidity by height
         humidity -= height / 3;
-        humidity += 0.2f;
+        humidity += 0.3f;
         return Mathf.Clamp01(humidity);
     }
 
     private float getTemperature(int x, int y, float heightVal) {
-        int lat = Mathf.Abs(y - (Consts.MAP_DIMENSION / 2)); // positive latitude at position given
-        float temp;
+        float lat = Mathf.Abs(y - (Consts.MAP_DIMENSION / 2));
+        lat = Mathf.InverseLerp(Consts.MAP_DIMENSION / 2, 0, lat);
+        float latTemperature = Mathf.Lerp(-60, 60, lat);
 
-        // get noise based on seed
         float perlinValue = Mathf.PerlinNoise((x / scale) + temperatureOffsets[0].x, (y / scale) + temperatureOffsets[0].y) * 2 - 1;
-        perlinValue = perlinValue * 20; // make value larger so can directly subtract it
+        perlinValue = perlinValue * 20; // make perlin value larger
 
-        // choose value based on latitude and height
-        temp = 60 - perlinValue - (lat / 20f);
-        temp -= 20 * (1 - heightVal);
-        return temp;
+        return latTemperature - perlinValue;
     }
 
     IEnumerator GenerateTerrainImage() {
-        Texture2D tex = new Texture2D(Consts.MAP_DIMENSION, Consts.MAP_DIMENSION);
-        for (int i = 0; i < tex.width; i++) {
-            for (int j = 0; j < tex.width; j++) {
+        Debug.Log("Generating colour map...");
+
+        Texture2D colourMap = new Texture2D(Consts.MAP_DIMENSION, Consts.MAP_DIMENSION);
+        for (int i = 0; i < colourMap.width; i++) {
+            for (int j = 0; j < colourMap.width; j++) {
                 float height = getHeightValue(i, j);
 
-                float temp = getTemperature(i, j, height);
-                temp = Mathf.InverseLerp(-80f, 80f, temp);
-                temp *= biomeColourMap.width;
+                float colourMapPos1 = getTemperature(i, j, height);
+                colourMapPos1 = Mathf.InverseLerp(-60f, 60f, colourMapPos1);
+                colourMapPos1 *= biomeColourMap.width;
 
-                float humidity = getHumidity(i, j, height);
-                humidity = 1 - humidity;
-                humidity *= biomeColourMap.width;
-                Color color = biomeColourMap.GetPixel((int)temp, (int)humidity);
+                float colourMapPos2 = getHumidity(i, j, height);
+                colourMapPos2 = 1 - colourMapPos2;
+                colourMapPos2 *= biomeColourMap.width;
+                Color color = biomeColourMap.GetPixel((int)colourMapPos1, (int)colourMapPos2);
 
-                if (height < -0.29f) {
+                if (height < BEACH_HEIGHT) {
                     color = Consts.BIOME_COLOUR_DICT[BiomeType.Beach];
-                    // could add water color here for minimap?
                 }
-
-                color.a = Mathf.Clamp01(Mathf.InverseLerp(-1f, 1f, height)); // lower alpha is deeper
-                tex.SetPixel(i, j, color);
+                if (height < WATER_HEIGHT) {
+                    float heightPos = Mathf.InverseLerp(-1, WATER_HEIGHT, height);
+                    heightPos *= waterColourMap.height;
+                    color = waterColourMap.GetPixel(0, (int)heightPos);
+                }
+                colourMap.SetPixel(i, j, color);
             }
             yield return null;
         }
 
-        Debug.Log("Finished generating colourmap. Saving...");
-        SavePNG(tex);
+        Debug.Log("Finished generating colour map. Saving...");
+        SavePNG(colourMap, "ColourMap");
+        Debug.Log("Saved!");
+    }
+    IEnumerator GenerateTemperatureImage() {
+        Debug.Log("Generating temperature map...");
+
+        Texture2D temperatureMap = new Texture2D(Consts.MAP_DIMENSION, Consts.MAP_DIMENSION);
+        for (int i = 0; i < temperatureMap.width; i++) {
+            for (int j = 0; j < temperatureMap.width; j++) {
+                float height = getHeightValue(i, j);
+                float temperaturePos = getTemperature(i, j, height);
+                temperaturePos = Mathf.InverseLerp(-80f, 80f, temperaturePos);
+                temperaturePos *= temperatureColourMap.height;
+                temperatureMap.SetPixel(i, j, temperatureColourMap.GetPixel(0, (int)temperaturePos));
+            }
+            yield return null;
+        }
+
+        Debug.Log("Finished generating temperature map. Saving...");
+        SavePNG(temperatureMap, "TemperatureMap");
         Debug.Log("Saved!");
     }
 
-    void SavePNG(Texture2D tex) {
+    void SavePNG(Texture2D tex, string name) {
         byte[] bytes = tex.EncodeToPNG();
-        var dirPath = Application.dataPath + "/Images";
+        var dirPath = Application.dataPath + "/Images/";
         if (!Directory.Exists(dirPath)) {
             Directory.CreateDirectory(dirPath);
         }
-        File.WriteAllBytes(dirPath + "image.png", bytes);
+        File.WriteAllBytes(dirPath + name + ".png", bytes);
     }
 }
