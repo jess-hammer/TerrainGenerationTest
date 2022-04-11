@@ -236,8 +236,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   biomeColourMap: {fileID: 2800000, guid: a2dfb44eb41d64d12973d8f76153d235, type: 3}
-  waterColourMap: {fileID: 2800000, guid: e0c0149af30024e83b4d42a658088827, type: 3}
+  waterColourMap: {fileID: 2800000, guid: a8a21d2e6f73e479f8ea46721a1cb74a, type: 3}
   temperatureColourMap: {fileID: 2800000, guid: 1f30ad73b6f5c413fbd59b08320adaf8, type: 3}
+  humidityColourMap: {fileID: 2800000, guid: 9f92e7c9e29f24e30878c4c353c37d91, type: 3}
   BEACH_HEIGHT: -0.27
   WATER_HEIGHT: -0.3
   SEED: 130
