@@ -17,7 +17,7 @@ public class TerrainGenerator : MonoBehaviour {
     private Vector2[] temperatureOffsets;
 
     public static int nHeightLayers = 5;
-    public static int nHumidityLayers = 2;
+    public static int nHumidityLayers = 3;
 
     // the higher, the more 'zoomed in'.
     // Needs to be likely to result in non-integer
@@ -76,7 +76,6 @@ public class TerrainGenerator : MonoBehaviour {
         return height;
     }
 
-    // note: there is currently no noise layers for humidity
     private float getHumidity(int x, int y, float heightVal) {
         float humidityScale = scale / 3f;
         float humidity = 0;
@@ -101,7 +100,7 @@ public class TerrainGenerator : MonoBehaviour {
 
         // slightly influence humidity by height
         humidity -= height;
-        humidity += 0.5f;
+        humidity += 0.4f;
         return Mathf.Clamp01(humidity);
     }
 
