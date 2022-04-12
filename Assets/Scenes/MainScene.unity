@@ -216,6 +216,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1986443633}
   - component: {fileID: 1986443632}
+  - component: {fileID: 1986443634}
+  - component: {fileID: 1986443635}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -230,7 +232,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1986443631}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 34a3f8d2e2fda4a58b1a227fd9700053, type: 3}
   m_Name: 
@@ -254,3 +256,37 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1986443634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1986443631}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a5ec9c1086494167937b5982c09b6c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  biomeColourMap: {fileID: 2800000, guid: cb8c9249a60774ea0a1ef7c667bf40c7, type: 3}
+  waterColourMap: {fileID: 2800000, guid: dd5627af29c9d47259a099aeb75b0122, type: 3}
+  temperatureColourMap: {fileID: 2800000, guid: 1f30ad73b6f5c413fbd59b08320adaf8, type: 3}
+  humidityColourMap: {fileID: 2800000, guid: 9f92e7c9e29f24e30878c4c353c37d91, type: 3}
+  SEED: 130
+--- !u!114 &1986443635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1986443631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4db7b249259a484dbe6e41cac1b8f16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  biomeColourMap: {fileID: 2800000, guid: cb8c9249a60774ea0a1ef7c667bf40c7, type: 3}
+  waterColourMap: {fileID: 2800000, guid: dd5627af29c9d47259a099aeb75b0122, type: 3}
+  temperatureColourMap: {fileID: 2800000, guid: 1f30ad73b6f5c413fbd59b08320adaf8, type: 3}
+  humidityColourMap: {fileID: 2800000, guid: 9f92e7c9e29f24e30878c4c353c37d91, type: 3}
+  SEED: 130
