@@ -280,7 +280,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1986443631}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4db7b249259a484dbe6e41cac1b8f16, type: 3}
   m_Name: 
@@ -289,4 +289,5 @@ MonoBehaviour:
   waterColourMap: {fileID: 2800000, guid: dd5627af29c9d47259a099aeb75b0122, type: 3}
   temperatureColourMap: {fileID: 2800000, guid: 1f30ad73b6f5c413fbd59b08320adaf8, type: 3}
   humidityColourMap: {fileID: 2800000, guid: 9f92e7c9e29f24e30878c4c353c37d91, type: 3}
+  cloudColourMap: {fileID: 2800000, guid: badf92427763143a391c5c4923ffe2e4, type: 3}
   SEED: 130
