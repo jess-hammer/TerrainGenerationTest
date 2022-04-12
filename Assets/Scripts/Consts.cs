@@ -5,7 +5,7 @@ using UnityEngine;
 // this class is for storing constant variables
 public static class Consts {
     // length of the map in number of tiles
-    public static int MAP_DIMENSION = 1000;
+    public static int MAP_DIMENSION = 500;
 
     // table used to convert temp and humidity into biomes
     public static BiomeType[,] BIOME_TYPE_TABLE = {   
