@@ -10,9 +10,6 @@ public class TerrainGeneratorWithClouds : MonoBehaviour {
     public Texture2D humidityColourMap;
     public Texture2D cloudColourMap;
 
-    float BEACH_HEIGHT = -0.17f;
-    float WATER_HEIGHT = -0.2f;
-
     private Vector2[] heightOffsets;
     private Vector2[] humidityOffsets;
     private Vector2[] temperatureOffsets;
@@ -20,29 +17,20 @@ public class TerrainGeneratorWithClouds : MonoBehaviour {
     public static int nHeightLayers = 5;
     public static int nHumidityLayers = 3;
 
-    // the higher, the more 'zoomed in'.
-    // Needs to be likely to result in non-integer
     float scale = 101.7f;
-
-    // the higher the octave, the less of an effect
     float persistance = 0.5f;
-
-    // value that decreases scale each octave
     float lacunarity = 2.1f;
 
-    // seed to help with world generation
-    public int SEED = 130;
-
-    // pseudo random number generator will help generate the same random numbers each run
     private System.Random PRNG;
 
     void Awake() {
-        PRNG = new System.Random(SEED);
+        PRNG = new System.Random(Consts.SEED);
         heightOffsets = generateNRandomVectors(nHeightLayers);
         humidityOffsets = generateNRandomVectors(nHumidityLayers);
         temperatureOffsets = generateNRandomVectors(1);
     }
 
+    //generates 30 images
     void Start() {
         int offsetX = 0;
         for (float i = 0; i < 3; i += 0.1f) {
@@ -161,21 +149,28 @@ public class TerrainGeneratorWithClouds : MonoBehaviour {
 
                 float cloudNoise = getCloudNoise(i + offsetX, j, slice);
 
-                if (height < BEACH_HEIGHT) {
-                    color = Consts.BIOME_COLOUR_DICT[BiomeType.Beach];
+                if (height < Consts.BEACH_HEIGHT) {
+                    color = Consts.BEACH_COLOUR;
                 }
-                if (height < WATER_HEIGHT) {
-                    float heightPos = Mathf.InverseLerp(-1, WATER_HEIGHT, height);
+                if (height < Consts.WATER_HEIGHT) {
+                    float heightPos = Mathf.InverseLerp(-1, Consts.WATER_HEIGHT, height);
                     heightPos *= waterColourMap.height;
                     color = waterColourMap.GetPixel(0, (int)heightPos);
                 }
 
                 if (cloudNoise > 0.57) {
+                    // a very light grey colour
                     Color cloudColor = new Color(0.96f, 0.95f, 0.95f, 1);
+
                     float cloudColorMapPos = cloudColourMap.height * Mathf.Clamp01(Mathf.InverseLerp(0.57f, 1f, cloudNoise));
+
                     cloudColor.a = cloudColourMap.GetPixel(0, (int)cloudColorMapPos).r;
                     color = blendColours(color, cloudColor);
-                } else if (cloudNoise > 0.56) {
+                }
+
+                // thought it looked nicer with a very transparent border around each cloud
+                else if (cloudNoise > 0.56) {
+                    // a very transparent light grey colour
                     Color cloudColor = new Color(0.96f, 0.95f, 0.95f, 0.2f);
                     color = blendColours(color, cloudColor);
                 }
@@ -187,6 +182,7 @@ public class TerrainGeneratorWithClouds : MonoBehaviour {
         Debug.Log("Saved!");
     }
 
+    // blend between background and foreground colours
     Color blendColours(Color bg, Color fg) {
         Color result = new Color();
         result.a = 1 - (1 - fg.a) * (1 - bg.a);

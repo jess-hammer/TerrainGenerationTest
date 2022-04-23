@@ -9,9 +9,6 @@ public class TerrainGenerator : MonoBehaviour {
     public Texture2D temperatureColourMap;
     public Texture2D humidityColourMap;
 
-    float BEACH_HEIGHT = -0.17f;
-    float WATER_HEIGHT = -0.2f;
-
     private Vector2[] heightOffsets;
     private Vector2[] humidityOffsets;
     private Vector2[] temperatureOffsets;
@@ -21,32 +18,34 @@ public class TerrainGenerator : MonoBehaviour {
 
     // the higher, the more 'zoomed in'.
     // Needs to be likely to result in non-integer
-    float scale = 101.7f;
+    private float scale = 101.7f;
 
-    // the higher the octave, the less of an effect
-    float persistance = 0.5f;
+    // value used to lessen the effect each octave layer has
+    private float persistance = 0.5f;
 
     // value that decreases scale each octave
-    float lacunarity = 2.1f;
-
-    // seed to help with world generation
-    public int SEED = 130;
+    private float lacunarity = 2.1f;
 
     // pseudo random number generator will help generate the same random numbers each run
     private System.Random PRNG;
 
-    void Awake() {
-        PRNG = new System.Random(SEED);
+    void Start() {
+        // initliase pseudo-random number generator with a seed
+        PRNG = new System.Random(Consts.SEED);
+
+        // Unity's perlin noise is not initialised with a seed, so instead we pick random spots in that perlin noise to sample from
         heightOffsets = generateNRandomVectors(nHeightLayers);
         humidityOffsets = generateNRandomVectors(nHumidityLayers);
         temperatureOffsets = generateNRandomVectors(1);
+
+        // generate the image using coroutine so Unity doesn't freeze
+        StartCoroutine("GenerateTerrainImage");
+        // StartCoroutine("GenerateTemperatureImage");
+        // StartCoroutine("GenerateHumidityImage");
+        // StartCoroutine("GenerateHeightImage");
     }
 
-    void Start() {
-        StartCoroutine("GenerateTerrainImage");
-        StartCoroutine("GenerateTemperatureImage");
-        StartCoroutine("GenerateHumidityImage");
-    }
+    // function to generate an array of coordinates, remember that PRNG is dependent on SEED
     private Vector2[] generateNRandomVectors(int n) {
         Vector2[] numbers = new Vector2[n];
         for (int i = 0; i < n; i++) {
@@ -57,17 +56,21 @@ public class TerrainGenerator : MonoBehaviour {
         return numbers;
     }
 
+    // function to get the height at some specific x and y coordinates
     private float getHeightValue(int x, int y) {
         float height = 0;
         float amplitude = 1;
         float frequency = 1;
 
         for (int i = 0; i < nHeightLayers; i++) {
-            // scale results in non-integer value
+            // calculate sample coordinates
             float sampleX = x / (scale / frequency) + heightOffsets[i].x + 0.1f;
             float sampleY = y / (scale / frequency) + heightOffsets[i].y + 0.1f;
 
-            float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1; // make in range -1 to 1
+            // sample the perlin noise, making in range -1 to 1 (in range 0 - 1 by default)
+            float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1;
+
+            // add this new noise to existing layers
             height += perlinValue * amplitude;
 
             // amplitude decreases each octave if persistance < 1
@@ -78,6 +81,7 @@ public class TerrainGenerator : MonoBehaviour {
         return height;
     }
 
+    // function to get the humidity at some specific x and y coordinates
     private float getHumidity(int x, int y, float heightVal) {
         float humidityScale = scale / 3f;
         float humidity = 0;
@@ -85,10 +89,11 @@ public class TerrainGenerator : MonoBehaviour {
         float frequency = 1;
 
         for (int i = 0; i < nHumidityLayers; i++) {
-            // scale results in non-integer value
+            // calculate sample coordinates
             float sampleX = x / (humidityScale / frequency) + humidityOffsets[i].x + 0.1f;
             float sampleY = y / (humidityScale / frequency) + humidityOffsets[i].y + 0.1f;
 
+            // sample perlin noise
             float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
             humidity += perlinValue * amplitude;
 
@@ -98,25 +103,39 @@ public class TerrainGenerator : MonoBehaviour {
             frequency *= lacunarity;
         }
 
+        // convert height value to be in range 0 - 1
         float height = Mathf.InverseLerp(-1f, 1f, heightVal);
 
         // slightly influence humidity by height
         humidity -= height;
+
+        // compensate for adjustment
         humidity += 0.4f;
         return Mathf.Clamp01(humidity);
     }
 
+    // get the temperate at some specific x and y coordinates
     private float getTemperature(int x, int y, float heightVal) {
+        // temperature is hotter at equator and cooler at poles, so it is deoendant on y value
         float lat = Mathf.Abs(y - (Consts.MAP_DIMENSION / 2));
+
+        // make lat value in range 0 - 1
         lat = Mathf.InverseLerp(Consts.MAP_DIMENSION / 2, 0, lat);
+
+        // convert to degrees celcius (stretch in range -50 to 50 degrees)
         float latTemperature = Mathf.Lerp(-50, 50, lat);
 
+        // sample the perlin noise
         float perlinValue = Mathf.PerlinNoise((x / scale) + temperatureOffsets[0].x, (y / scale) + temperatureOffsets[0].y) * 2 - 1;
-        perlinValue = perlinValue * 20; // make perlin value larger
 
+        // make perlin value larger (convert it to degrees)
+        perlinValue = perlinValue * 20;
+
+        // modifiy previous temperature value by the perlin noise
         return latTemperature - perlinValue;
     }
 
+    // function that calculates the colour of each pixel to form the final image by using the height, temperature and humidity values
     IEnumerator GenerateTerrainImage() {
         Debug.Log("Generating colour map...");
 
@@ -134,14 +153,16 @@ public class TerrainGenerator : MonoBehaviour {
                 colourMapPos2 *= biomeColourMap.width;
                 Color color = biomeColourMap.GetPixel((int)colourMapPos1, (int)colourMapPos2);
 
-                if (height < BEACH_HEIGHT) {
-                    color = Consts.BIOME_COLOUR_DICT[BiomeType.Beach];
+                if (height < Consts.BEACH_HEIGHT) {
+                    color = Consts.BEACH_COLOUR;
                 }
-                if (height < WATER_HEIGHT) {
-                    float heightPos = Mathf.InverseLerp(-1, WATER_HEIGHT, height);
+
+                if (height < Consts.WATER_HEIGHT) {
+                    float heightPos = Mathf.InverseLerp(-1, Consts.WATER_HEIGHT, height);
                     heightPos *= waterColourMap.height;
                     color = waterColourMap.GetPixel(0, (int)heightPos);
                 }
+
                 colourMap.SetPixel(i, j, color);
             }
             yield return null;
@@ -181,7 +202,7 @@ public class TerrainGenerator : MonoBehaviour {
                 float height = getHeightValue(i, j);
                 float humidityPos = getHumidity(i, j, height);
                 humidityPos *= humidityColourMap.height;
-                if (height < WATER_HEIGHT) {
+                if (height < Consts.WATER_HEIGHT) {
                     humidityMap.SetPixel(i, j, humidityColourMap.GetPixel(0, humidityColourMap.height - 1));
                 } else {
                     humidityMap.SetPixel(i, j, humidityColourMap.GetPixel(0, (int)humidityPos));
@@ -192,6 +213,28 @@ public class TerrainGenerator : MonoBehaviour {
 
         Debug.Log("Finished generating humidity map. Saving...");
         SavePNG(humidityMap, "HumidityMap");
+        Debug.Log("Saved!");
+    }
+
+    IEnumerator GenerateHeightImage() {
+        Debug.Log("Generating height map...");
+
+        Texture2D heightMap = new Texture2D(Consts.MAP_DIMENSION, Consts.MAP_DIMENSION);
+        for (int i = 0; i < heightMap.width; i++) {
+            for (int j = 0; j < heightMap.width; j++) {
+                float height = getHeightValue(i, j);
+                float lerpedHeight = Mathf.InverseLerp(-1, 1, height);
+                Color colour = new Color(lerpedHeight, lerpedHeight, lerpedHeight, 1);
+                if (height < Consts.WATER_HEIGHT) {
+                    colour = Color.black;
+                }
+                heightMap.SetPixel(i, j, colour);
+            }
+            yield return null;
+        }
+
+        Debug.Log("Finished generating height map. Saving...");
+        SavePNG(heightMap, "HeightMap");
         Debug.Log("Saved!");
     }
 

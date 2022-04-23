@@ -9,9 +9,6 @@ public class TerrainSliceGenerator : MonoBehaviour {
     public Texture2D temperatureColourMap;
     public Texture2D humidityColourMap;
 
-    float BEACH_HEIGHT = -0.17f;
-    float WATER_HEIGHT = -0.2f;
-
     private Vector2[] heightOffsets;
     private Vector2[] humidityOffsets;
     private Vector2[] temperatureOffsets;
@@ -19,29 +16,20 @@ public class TerrainSliceGenerator : MonoBehaviour {
     public static int nHeightLayers = 5;
     public static int nHumidityLayers = 3;
 
-    // the higher, the more 'zoomed in'.
-    // Needs to be likely to result in non-integer
     float scale = 101.7f;
-
-    // the higher the octave, the less of an effect
     float persistance = 0.5f;
-
-    // value that decreases scale each octave
     float lacunarity = 2.1f;
 
-    // seed to help with world generation
-    public int SEED = 130;
-
-    // pseudo random number generator will help generate the same random numbers each run
     private System.Random PRNG;
 
     void Awake() {
-        PRNG = new System.Random(SEED);
+        PRNG = new System.Random(Consts.SEED);
         heightOffsets = generateNRandomVectors(nHeightLayers);
         humidityOffsets = generateNRandomVectors(nHumidityLayers);
         temperatureOffsets = generateNRandomVectors(1);
     }
 
+    // generates 30 images
     void Start() {
         for (float i = 0; i < 3; i += 0.1f) {
             StartCoroutine(GenerateTerrainImageSlice(i));
@@ -133,11 +121,11 @@ public class TerrainSliceGenerator : MonoBehaviour {
                 colourMapPos2 *= biomeColourMap.width;
                 Color color = biomeColourMap.GetPixel((int)colourMapPos1, (int)colourMapPos2);
 
-                if (height < BEACH_HEIGHT) {
-                    color = Consts.BIOME_COLOUR_DICT[BiomeType.Beach];
+                if (height < Consts.BEACH_HEIGHT) {
+                    color = Consts.BEACH_COLOUR;
                 }
-                if (height < WATER_HEIGHT) {
-                    float heightPos = Mathf.InverseLerp(-1, WATER_HEIGHT, height);
+                if (height < Consts.WATER_HEIGHT) {
+                    float heightPos = Mathf.InverseLerp(-1, Consts.WATER_HEIGHT, height);
                     heightPos *= waterColourMap.height;
                     color = waterColourMap.GetPixel(0, (int)heightPos);
                 }
@@ -147,14 +135,14 @@ public class TerrainSliceGenerator : MonoBehaviour {
         }
         SavePNG(colourMap, "ColourMapSlice" + slice);
         Debug.Log("Done!");
+    }
 
-        void SavePNG(Texture2D tex, string name) {
-            byte[] bytes = tex.EncodeToPNG();
-            var dirPath = Application.dataPath + "/Images/Slices/";
-            if (!Directory.Exists(dirPath)) {
-                Directory.CreateDirectory(dirPath);
-            }
-            File.WriteAllBytes(dirPath + name + ".png", bytes);
+    void SavePNG(Texture2D tex, string name) {
+        byte[] bytes = tex.EncodeToPNG();
+        var dirPath = Application.dataPath + "/Images/Slices/";
+        if (!Directory.Exists(dirPath)) {
+            Directory.CreateDirectory(dirPath);
         }
+        File.WriteAllBytes(dirPath + name + ".png", bytes);
     }
 }
